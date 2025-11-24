@@ -1,8 +1,25 @@
+fn main() {
+
+}
+
 type Byte = u8;
 
-struct Loader {
+struct ProgrammLoader {
     bytes: Vec<Byte>,
-    error: Option<std::io::Error>,
+    counter: usize,
+}
+
+impl ProgrammLoader{
+    pub fn new() -> Result<Self, std::io::Error> { 
+        let mut bytes = Vec::new();
+        Ok(Self{
+            bytes,
+            counter: 0,
+        })
+    }
+    pub fn get_bytes(&self, n: usize) -> &[Byte] {
+        &self.bytes[self.counter..n]
+    }
 }
 
 struct Bucket {
@@ -12,6 +29,8 @@ struct Bucket {
 struct Memory<const SIZE: usize> {
     memory: [Bucket; SIZE],
 }
+
+struct Field {}
 
 struct Attribute {
     name: String,
@@ -27,3 +46,4 @@ struct VmImaginary<const SIZE: usize> {
     memory: Memory<SIZE>,
     pc: usize,
 }
+
