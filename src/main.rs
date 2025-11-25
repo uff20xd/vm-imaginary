@@ -4,6 +4,8 @@ fn main() {
     dbg!(bucket);
 }
 
+type VmError = String;
+
 type Byte = u8;
 
 struct ProgrammLoader {
@@ -19,8 +21,14 @@ impl ProgrammLoader{
             counter: 0,
         })
     }
-    pub fn get_bytes(&self, n: usize) -> &[Byte] {
-        &self.bytes[self.counter..n]
+    pub fn get_bytes(&self, from: usize, to: usize) -> &[Byte] {
+        &self.bytes[from..to]
+    }
+
+    pub fn get_next_bytes(&mut self, n:usize) -> &[Byte] {
+        let teva = &self.bytes[self.counter..self.counter + n];
+        self.counter += n;
+        teva
     }
 }
 
@@ -31,6 +39,28 @@ struct Bucket {
     bucket: [Byte; 8],
     full: bool,
 }
+
+enum Const {
+    String(String),
+    NameIndex(u16),
+    TypeAndNameIndex(u16),
+    StringIndex(u16),
+    DescIndex(u16),
+    ClassIndex(u16),
+}
+impl Const {
+    pub fn parse(loader: &ProgrammLoader) -> Result<Self, VmError> {
+        todo!()
+    }
+    pub fn get_str(&self) -> Result<String, VmError> {
+        match self {
+            Const::String(str) => {return Ok(str.clone())},
+            _ => {return Err("Not a String in Const::get_str".to_owned())},
+        }
+    }
+}
+
+type ConstPool = Vec<Const>;
 
 
 struct Memory<const SIZE: usize> {
@@ -43,7 +73,12 @@ impl<const SIZE: usize> Memory<SIZE> {
     }
 }
 
-struct Field {}
+struct Field {
+    flags: u16,
+    name: String,
+    descriptors: String,
+    attributes: Vec<Attribute>,
+}
 
 struct Attribute {
     name: String,
