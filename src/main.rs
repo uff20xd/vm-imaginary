@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::Read;
 use std::path::Path;
+use std::convert::TryFrom;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vm = VmImaginary::<256>::new();
     let bucket = Bucket::default();
@@ -31,14 +32,39 @@ impl ProgrammLoader{
             counter: 0,
         })
     }
-    pub fn get_bytes(&self, from: usize, to: usize) -> &[Byte] {
+    fn get_bytes(&self, from: usize, to: usize) -> &[Byte] {
         &self.bytes[from..to]
     }
 
-    pub fn get_next_bytes(&mut self, n:usize) -> &[Byte] {
+    fn get_next_bytes(&mut self, n:usize) -> &[Byte] {
         let teva = &self.bytes[self.counter..self.counter + n];
         self.counter += n;
         teva
+    }
+    fn get_next_bytes_as_usize(&mut self, n: usize) -> usize {
+        let id_bytes = <[u8; 8]>::try_from(self.get_next_bytes(n)).unwrap();
+        let num: usize = usize::from_le_bytes(id_bytes);
+        num
+    }
+    pub fn parse_pool(&mut self) -> ConstPool {
+        let mut const_pool = ConstPool::new();
+        let mut id_bytes = <[u8; 8]>::try_from(self.get_next_bytes(2)).unwrap();
+        let len: usize = usize::from_le_bytes(id_bytes);
+        for i in 0..len {
+            const_pool.push(self.parse_const());
+        }
+        const_pool
+    }
+    pub fn parse_const(&mut self) -> Const {
+        let tag = self.get_next_bytes(1)[0];
+        match tag {
+            0x01 => {Const::String(String::from(self.get_next_bytes(self.get_next_bytes_as_usize(2))))},
+            0x07 => {Const::NameIndex(self.get_next_bytes_as_usize(2) as u16)},
+            0x08 => {Const::StringIndex(self.get_next_bytes_as_usize(2) as u16)},
+            0x09 || 0x0a => {todo!()},
+            0x0c => {todo!()},
+            _ => {panic!("Fuck you")},
+        }
     }
 }
 
