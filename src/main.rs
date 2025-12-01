@@ -76,14 +76,21 @@ struct Bucket {
     full: bool,
 }
 
-enum Const {
-    String(String),
-    NameIndex(u16),
-    TypeAndNameIndex(u16),
-    StringIndex(u16),
-    DescIndex(u16),
-    ClassIndex(u16),
+enum ConstTag {
 }
+
+#[derive(Default)]
+struct Const {
+    tag: ConstTag,
+    string: String,
+    name_index: u16,
+    class_index: u16,
+    name_and_type_index: u16,
+    string_index: u16,
+    desc_index: u16,
+
+}
+
 impl Const {
     pub fn parse(loader: &ProgrammLoader) -> Result<Self, VmError> {
         todo!()
