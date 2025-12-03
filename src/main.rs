@@ -57,10 +57,13 @@ impl ProgrammLoader{
     }
     pub fn parse_const(&mut self) -> Const {
         let tag = self.get_next_bytes(1)[0];
+        let mut c = Const::default();
         match tag {
-            0x01 => {Const::String(String::from(self.get_next_bytes(self.get_next_bytes_as_usize(2))))},
-            0x07 => {Const::NameIndex(self.get_next_bytes_as_usize(2) as u16)},
-            0x08 => {Const::StringIndex(self.get_next_bytes_as_usize(2) as u16)},
+            0x01 => {
+                c.String = String::from(self.get_next_bytes());
+            },
+            0x07 => {todo!()},
+            0x08 => {todo!()},
             0x09 || 0x0a => {todo!()},
             0x0c => {todo!()},
             _ => {panic!("Fuck you")},
@@ -76,7 +79,15 @@ struct Bucket {
     full: bool,
 }
 
+#[derive(Default)]
 enum ConstTag {
+    String,
+    ClassIndex,
+    StringRefrenceIndex,
+    FieldAndMethod,
+    NameIndex,
+    #[default]
+    NonState,
 }
 
 #[derive(Default)]
