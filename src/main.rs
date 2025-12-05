@@ -10,7 +10,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _cafebabe = programm_loader.get_next_bytes(4);
     let _major = programm_loader.get_next_bytes_as_usize(2);
     let _minor = programm_loader.get_next_bytes_as_usize(2);
-    let _const_pool = programm_loader.parse_pool();
+    let const_pool = programm_loader.parse_pool();
+    dbg!(const_pool);
     Ok(())
 }
 
@@ -55,8 +56,9 @@ impl ProgrammLoader{
     }
     pub fn parse_pool(&mut self) -> ConstPool {
         let mut const_pool = ConstPool::new();
-        let len: usize = self.get_next_bytes_as_usize(2);
+        let len: usize = self.get_next_bytes_as_usize(2) - 1;
         for i in 0..len {
+            //println!("Iteration for const Pool: {}", i);
             const_pool.push(self.parse_const());
         }
         const_pool
@@ -115,7 +117,7 @@ struct Bucket {
     full: bool,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 enum ConstTag {
     String,
     ClassIndex,
@@ -126,7 +128,7 @@ enum ConstTag {
     NonState,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 struct Const {
     tag: ConstTag,
     string: String,
@@ -135,7 +137,6 @@ struct Const {
     name_and_type_index: u16,
     string_index: u16,
     desc_index: u16,
-
 }
 
 impl Const {
