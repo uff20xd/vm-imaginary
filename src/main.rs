@@ -6,9 +6,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vm = VmImaginary::<256>::new();
     let bucket = Bucket::default();
     let mut programm_loader = ProgrammLoader::new("tests/Add.class")?;
-    dbg!(&programm_loader);
-    dbg!(programm_loader.get_next_bytes(2));
-    dbg!(programm_loader.get_next_bytes_as_usize(2));
+    //dbg!(&programm_loader);
+    let _cafebabe = programm_loader.get_next_bytes(4);
+    let _major = programm_loader.get_next_bytes_as_usize(2);
+    let _minor = programm_loader.get_next_bytes_as_usize(2);
+    let _const_pool = programm_loader.parse_pool();
     Ok(())
 }
 
@@ -53,8 +55,7 @@ impl ProgrammLoader{
     }
     pub fn parse_pool(&mut self) -> ConstPool {
         let mut const_pool = ConstPool::new();
-        let mut id_bytes = <[u8; 8]>::try_from(self.get_next_bytes(2)).unwrap();
-        let len: usize = usize::from_le_bytes(id_bytes);
+        let len: usize = self.get_next_bytes_as_usize(2);
         for i in 0..len {
             const_pool.push(self.parse_const());
         }
@@ -66,19 +67,47 @@ impl ProgrammLoader{
         match tag {
             0x01 => {
                 let len = self.get_next_bytes_as_usize(2);
+                c.tag = ConstTag::String;
                 c.string = str::from_utf8(self.get_next_bytes(len)).unwrap().to_owned();
             },
-            0x07 => {todo!()},
-            0x08 => {todo!()},
-            0x09 | 0x0a => {todo!()},
-            0x0c => {todo!()},
-            _ => {panic!("Fuck you")},
+            0x07 => {
+                c.tag = ConstTag::ClassIndex;
+                c.name_index = self.get_next_bytes_as_usize(2) as u16;
+            },
+            0x08 => {
+                c.tag = ConstTag::StringRefrenceIndex;
+                c.string_index = self.get_next_bytes_as_usize(2) as u16;
+            },
+            0x09 | 0x0a => {
+                c.tag = ConstTag::FieldAndMethod;
+                c.class_index = self.get_next_bytes_as_usize(2) as u16;
+                c.name_and_type_index = self.get_next_bytes_as_usize(2) as u16;
+            },
+            0x0c => {
+                c.tag = ConstTag::NameAndTypeIndex;
+                c.name_index = self.get_next_bytes_as_usize(2) as u16;
+                c.desc_index = self.get_next_bytes_as_usize(2) as u16;
+            },
+            _ => {
+                dbg!(&tag);
+                panic!("Fuck you")
+            },
         }
         c
     }
 }
 
-struct Programm {}
+#[derive(Default)]
+struct Programm {
+    const_pool: ConstPool,
+    name: String,
+    ssuper: String,
+    flags: u16,
+    interfaces: Vec<String>,
+    fields: Vec<String>,
+    methods: Vec<String>,
+    attributes: Vec<String>,
+}
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Bucket {
@@ -92,7 +121,7 @@ enum ConstTag {
     ClassIndex,
     StringRefrenceIndex,
     FieldAndMethod,
-    NameIndex,
+    NameAndTypeIndex,
     #[default]
     NonState,
 }
@@ -110,9 +139,6 @@ struct Const {
 }
 
 impl Const {
-    pub fn parse(loader: &ProgrammLoader) -> Result<Self, VmError> {
-        todo!()
-    }
     pub fn get_str(&self) -> Result<String, VmError> {
         match self.tag {
             ConstTag::String => {return Ok(self.string.clone())},
@@ -145,7 +171,7 @@ struct Attribute {
     data: Vec<Byte>,
 }
 
-struct Struct {
+struct Class {
     name: String,
     fields: Vec<Field>,
 }
@@ -161,7 +187,7 @@ impl<const SIZE: usize> VmImaginary<SIZE> {
         Self {
             memory: Memory::<SIZE>::init(),
             pc: 0,
-            p: Programm {},
+            p: Programm { ..Default::default() },
         }
     }
     pub fn exec_program(programm: Programm) -> Result<(), Box<dyn std::error::Error>> { todo!() }
