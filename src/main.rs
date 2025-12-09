@@ -7,11 +7,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bucket = Bucket::default();
     let mut programm_loader = ProgrammLoader::new("tests/Add.class")?;
     //dbg!(&programm_loader);
-    let _cafebabe = programm_loader.get_next_bytes(4);
-    let _major = programm_loader.get_next_bytes_as_usize(2);
-    let _minor = programm_loader.get_next_bytes_as_usize(2);
+    let _bla = programm_loader.get_next_bytes(8);
     let const_pool = programm_loader.parse_pool();
-    dbg!(const_pool);
+    let flags = programm_loader.get_next_bytes(2);
+    todo!("Das indexing läuft nicht ganz im Constpool. Bitte lösen!")
+    let name = const_pool[programm_loader.get_next_bytes_as_usize(2)-1].get_str().unwrap();
+    let ssuper = const_pool[programm_loader.get_next_bytes_as_usize(2)-1].get_str().unwrap();
+    let fields = programm_loader.parse_fields(const_pool);
+    //let _interfaces = programm_loader.parse_interfaces(const_pool);
     Ok(())
 }
 
@@ -56,7 +59,7 @@ impl ProgrammLoader{
     }
     pub fn parse_pool(&mut self) -> ConstPool {
         let mut const_pool = ConstPool::new();
-        let len: usize = self.get_next_bytes_as_usize(2) - 1;
+        let len: usize = self.get_next_bytes_as_usize(2)-1;
         for i in 0..len {
             //println!("Iteration for const Pool: {}", i);
             const_pool.push(self.parse_const());
@@ -97,6 +100,41 @@ impl ProgrammLoader{
         }
         c
     }
+    fn parse_interfaces(&mut self, const_pool: ConstPool) -> Vec<String> {
+        let interface_count = self.get_next_bytes_as_usize(2);
+        let mut interfaces = Vec::new();
+        for i in 0..interface_count {
+            interfaces.push(const_pool[i-1].get_str().unwrap());
+        }
+        interfaces
+    }
+    fn parse_fields(&mut self, const_pool: ConstPool) -> Vec<Field> {
+        let field_count = self.get_next_bytes_as_usize(2);
+        let mut fields = Vec::new();
+        for i in 0..field_count {
+            fields.push(Field {
+                flags: self.get_next_bytes_as_usize(2) as u16,
+                name: const_pool[self.get_next_bytes_as_usize(2)].get_str().unwrap(),
+                descriptors: const_pool[self.get_next_bytes_as_usize(2)].get_str().unwrap(),
+                attributes: self.parse_attributes(const_pool.clone()),
+            }
+            );
+        }
+        fields
+    }
+
+    fn parse_attributes(&mut self, const_pool: ConstPool) ->  Vec<Attribute> {
+        let attribute_count = self.get_next_bytes_as_usize(2);
+        let mut attributes = Vec::new();
+        for i in 0..attribute_count {
+            attributes.push(Attribute {
+                name: const_pool[self.get_next_bytes_as_usize(2)].get_str().unwrap(),
+                data: self.get_next_bytes(4).into(),
+            }
+            );
+        }
+        attributes
+    }
 }
 
 #[derive(Default)]
@@ -106,8 +144,8 @@ struct Programm {
     ssuper: String,
     flags: u16,
     interfaces: Vec<String>,
-    fields: Vec<String>,
-    methods: Vec<String>,
+    fields: Vec<Field>,
+    methods: Vec<Field>,
     attributes: Vec<String>,
 }
 
@@ -143,7 +181,10 @@ impl Const {
     pub fn get_str(&self) -> Result<String, VmError> {
         match self.tag {
             ConstTag::String => {return Ok(self.string.clone())},
-            _ => {return Err("Not a String in Const::get_str".to_owned())},
+            _ => {
+                println!("{:?}", self.tag);
+                return Err("Not a String in Const::get_str".to_owned())
+            },
         }
     }
 }
