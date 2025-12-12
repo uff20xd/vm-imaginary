@@ -14,7 +14,6 @@ struct Runtime {
 }
 
 struct Frame {
-
 }
 
 struct Program {

@@ -9,12 +9,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //dbg!(&programm_loader);
     let _bla = programm_loader.get_next_bytes(8);
     let const_pool = programm_loader.parse_pool();
-    let flags = programm_loader.get_next_bytes_as_usize(2);
-    let name = programm_loader.get_next_bytes_as_usize(2);
-    let ssuper = programm_loader.get_next_bytes_as_usize(2);
-    let interfaces = programm_loader.parse_interfaces(&const_pool);
-    let fields = programm_loader.parse_fields(&const_pool);
-    let methods = programm_loader.parse_fields(&const_pool);
+    //let flags = programm_loader.get_next_bytes_as_usize(2);
+    //let name = resolve(&const_pool, programm_loader.get_next_bytes_as_usize(2));
+    //let ssuper = resolve(&const_pool, programm_loader.get_next_bytes_as_usize(2));
+    //let interfaces = programm_loader.parse_interfaces(&const_pool);
+    //let fields = programm_loader.parse_fields(&const_pool);
+    //let methods = programm_loader.parse_fields(&const_pool);
     //let _interfaces = programm_loader.parse_interfaces(const_pool);
     Ok(())
 }
