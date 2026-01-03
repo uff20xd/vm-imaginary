@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+type Byte = u8;
 
 fn main() -> Result<(), ()> {
     Ok(())
@@ -16,6 +17,10 @@ struct Runtime {
 struct Frame {
 }
 
+struct Stack {
+    stack: VecDeque<Byte>,
+}
+
 struct Program {
     types: BTreeSet<Type>,
     const_pool: ConstPool,
@@ -23,8 +28,14 @@ struct Program {
 
 type ConstPool = Vec<Const>;
 
-struct Type;
-struct Field;
+struct Type {
+    size_in_bytes: usize,
+}
+
+struct Field {}
+struct MemLayout {
+    layout: Vec<Type>,
+}
 
 enum Const {
     String(String),
