@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::collections::VecDeque;
 type Byte = u8;
 
 fn main() -> Result<(), ()> {
@@ -38,7 +39,7 @@ enum Instruction {
 
 struct Program {
     types: BTreeSet<Type>,
-    const_pool: ConstPool,
+    // const_pool: ConstPool,
     instructions: Vec<Instruction>,
     instruction_pointer: usize,
 }
@@ -58,9 +59,9 @@ impl Vm {
 
         loop {
             _ = match instructions[self.program.instruction_pointer] {
-                Add => {},
-                Sub => {},
-                Pop => {},
+                Instruction::Add => {},
+                Instruction::Sub => {},
+                Instruction::Pop => {},
             };
         }
     }
