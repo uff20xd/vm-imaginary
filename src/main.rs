@@ -5,48 +5,63 @@ fn main() -> Result<(), ()> {
     Ok(())
 }
 
-struct Vm {
-    runtime: Runtime,
-    program: Program,
+
+struct Frame {
+
 }
+
 
 struct Runtime {
     frame: Frame,
 }
 
-struct Frame {
+struct Field {
+    type_of_field: Type,
+    pointer: usize,
+}
+
+struct Type {
+    size_in_bytes: usize,
+    fields: Vec<Field>,
 }
 
 struct Stack {
     stack: VecDeque<Byte>,
 }
 
+#[derive(Clone, Copy)]
+enum Instruction {
+    Add,
+    Sub,
+    Pop,
+}
+
 struct Program {
     types: BTreeSet<Type>,
     const_pool: ConstPool,
+    instructions: Vec<Instruction>,
+    instruction_pointer: usize,
 }
 
-type ConstPool = Vec<Const>;
-
-struct Type {
-    size_in_bytes: usize,
+struct Vm {
+    runtime: Runtime,
+    program: Program,
 }
 
-struct Field {}
-struct MemLayout {
-    layout: Vec<Type>,
-}
 
-enum Const {
-    String(String),
-    StringIndex(u32),
-    TypeIndex(u32),
-    NameAndPlainType {
-        name: u32,
-        desc: u32,
-    },
-    FieldAndMethod {
-        r#type: u32,
-        name_and_plain_type: u32,
-    },
+impl Vm {
+    pub fn new() -> Self {
+        todo!()
+    }
+    pub fn exec(&mut self) -> bool {
+        let instructions = &self.program.instructions;
+
+        loop {
+            _ = match instructions[self.program.instruction_pointer] {
+                Add => {},
+                Sub => {},
+                Pop => {},
+            };
+        }
+    }
 }
