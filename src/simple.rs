@@ -1,13 +1,13 @@
 use std::collections::*;
 use std::default;
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct StackMachine {
     stack: VecDeque<usize>,
     instructions: Vec<Instruction>,
     instruction_pointer: usize,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Instruction {
     Add, Sub, 
     Push(usize),
@@ -20,6 +20,7 @@ pub enum Instruction {
 impl StackMachine {
     pub fn new(instructions: Vec<Instruction>) -> Self {
         Self {
+            instructions,
             ..default::Default::default()
         }
     }
