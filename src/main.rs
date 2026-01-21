@@ -11,6 +11,7 @@ type SInstruction = simple::Instruction;
 fn main() -> Result<(), ()> {
     let program = vec![ SInstruction::Push(10), SInstruction::Push(20), SInstruction::Add];
     let mut stack_machine = StackMachine::new(program);
+
     stack_machine.exec();
     dbg!(&stack_machine);
     Ok(())
