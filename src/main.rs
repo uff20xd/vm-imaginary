@@ -13,6 +13,7 @@ struct Frame {
 
 struct Runtime {
     frame: Frame,
+    const_pool:
 }
 
 struct Field {
@@ -29,13 +30,19 @@ struct Type {
 struct Function {
     name: String,
     parameters: Vec<(String, Type)>,
-    returns: Type,
+    returns: ConstPoolPtr<Type>,
     frame: Frame,
     instructions: Vec<Instruction>,
 }
 
+struct Value {
+    val: Rc<[u8]>
+    is_of_type: ConstPoolPtr<Type>,
+}
+
 struct Variable {
-    type: Type
+    name: String,
+
 }
 
 struct Stack {
@@ -46,7 +53,13 @@ struct Stack {
 enum Instruction {
     Add,
     Sub,
-    Pop,
+    Const(),
+}
+
+struct ConstPoolPtr<T> {
+    index: usize,
+    const_pool: Rc<ConstPool>,
+    _phantom_data: PhantomData<T>,
 }
 
 struct Program {
@@ -61,6 +74,7 @@ struct Vm {
     program: Program,
 }
 
+/// Points to a constant inside the Pool
 
 impl Vm {
     pub fn new() -> Self {
@@ -73,7 +87,6 @@ impl Vm {
             _ = match instructions[self.program.instruction_pointer] {
                 Instruction::Add => {},
                 Instruction::Sub => {},
-                Instruction::Pop => {},
             };
         }
     }
