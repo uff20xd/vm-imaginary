@@ -8,9 +8,8 @@ fn main() -> Result<(), ()> {
 
 
 struct Frame {
-
+    locals: BTreeSet<&str, >,
 }
-
 
 struct Runtime {
     frame: Frame,
@@ -18,12 +17,25 @@ struct Runtime {
 
 struct Field {
     type_of_field: Type,
-    pointer: usize,
+    offset: usize,
 }
 
 struct Type {
     size_in_bytes: usize,
     fields: Vec<Field>,
+    self_alias: bool,
+}
+
+struct Function {
+    name: String,
+    parameters: Vec<(String, Type)>,
+    returns: Type,
+    frame: Frame,
+    instructions: Vec<Instruction>,
+}
+
+struct Variable {
+    type: Type
 }
 
 struct Stack {
