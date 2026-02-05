@@ -25,6 +25,7 @@ pub struct Vm {
 impl Vm {
     pub fn new() -> Self {
         Self {
+            local_space: Buffer::new(BufferType::Local { used: 0 }),
             ..Self::default()
         }
     }
@@ -39,18 +40,18 @@ impl Vm {
                     let rhs: i32 = self.primary_stack.pop_into();
                     let lhs: i32 = self.primary_stack.pop_into();
                     let ret: i32 = rhs + lhs;
-                    let ret = i32::to_be_bytes(ret);
+                    let ret = i32::to_le_bytes(ret);
                     self.primary_stack.push_bytes(&ret[..])
                 },
                 Instruction::Sub => {
                     let rhs: i32 = self.primary_stack.pop_into();
                     let lhs: i32 = self.primary_stack.pop_into();
-                    let ret: i32 = rhs + lhs;
-                    let ret = i32::to_be_bytes(ret);
+                    let ret: i32 = rhs - lhs;
+                    let ret = i32::to_le_bytes(ret);
                     self.primary_stack.push_bytes(&ret[..])
                 },
                 Instruction::PushPrim(num) => {
-                    self.primary_stack.push_bytes(&num.to_be_bytes()[..])
+                    self.primary_stack.push_bytes(&num.to_le_bytes()[..])
                 },
                 Instruction::PushName(name) => {
                     self.name_stack.push(name.to_owned())
@@ -65,7 +66,10 @@ impl Vm {
                     dbg!(to_debug);
                 },
                 Instruction::Let => {
-
+                    // let of_type = self.type_stack.pop();
+                    let to_push: Box<[u8]>= self.primary_stack.pop_to_slice(4);
+                    let name = self.name_stack.pop();
+                    let pointer = self.local_space.alloc(&*to_push, 4);
                 },
                 Instruction::Static => {
                     let name = self.name_stack.pop();
@@ -185,7 +189,13 @@ struct Buffer {
 }
 
 impl Buffer {
-    pub fn new(mem: &[u8]) -> Self { todo!("Implement Initializing buffers with preset memory!")}
+    pub fn new(buf_type: BufferType) -> Self {
+        Self {
+            buffer_type: buf_type,
+            ..Self::default()
+        }
+    }
+    pub fn with_mem(mem: &[u8]) -> Self { todo!("Implement Initializing buffers with preset memory!")}
     pub fn scope_adjust(&mut self, to_index: usize) {
         match &mut self.buffer_type {
             &mut BufferType::Local { mut used } => {
@@ -206,6 +216,9 @@ impl Buffer {
         match &mut self.buffer_type {
             &mut BufferType::Local { mut used } => {
                 let pointer = BufferPointer::new(used, BufferType::Local { used: 0 }, FILLER_TYPE.clone());
+                if self.buf.len() <= used + size {
+                    self.buf.extend_from_slice(&vec![0; used + size * 2][..])
+                }
                 for (index, element) in mem.iter().enumerate() {
                     self.buf[index + used] = *element;
                 }
@@ -290,6 +303,14 @@ impl Stack<Byte> {
         let returnee: T = unsafe {
             *(self.stack[len-size..len].as_ptr() as *const T)
         };
+        self.stack.truncate(len-size);
+        returnee
+    }
+    pub fn pop_to_slice(&mut self, size: usize) -> Box<[u8]> {
+        let len = self.stack.len();
+        if len < size { panic!("Primarystackunderflow!") }
+        // SAFETY: We ensure that the stack is long enough and the slice is of the right size.
+        let returnee = Box::from(&self.stack[len-size..len]);
         self.stack.truncate(len-size);
         returnee
     }
