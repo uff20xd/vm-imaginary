@@ -1,8 +1,6 @@
 mod simple;
-use std::collections::BTreeMap;
-use std::collections::VecDeque;
-use std::rc::Rc;
-use std::marker::PhantomData;
+use std::collections::HashMap;
+use std::sync::Arc;
 type Byte = u8;
 
 use simple::StackMachine;
@@ -18,22 +16,52 @@ fn main() -> Result<(), ()> {
 }
 
 
+#[derive(Debug, Clone)]
 struct Frame {
-    locals: BTreeMap<String, Value>,
+    vars: HashMap<(String, BufferType), BufferPointer>,
 }
 
-struct Runtime {
-    frame: Frame,
-    const_pool: (),
+impl Frame {
+    pub fn new() -> Self {
+        Self {
+            vars: HashMap::new(),
+        }
+    }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Default)]
+struct Buffer {
+    buf: Vec<u8>,
+    empty: Vec<BufferPointer>,
+}
+
+impl Buffer {
+
+}
+
+#[derive(Debug, Clone, Default)]
+struct BufferPointer {
+    buf_type: BufferType,
+    index: usize,
+    pointee_type: Arc<Type>,
+}
+
+#[derive(Debug, Clone, Default)]
+enum BufferType {
+    Local,
+    Constant,
+    #[default]
+    Global,
+}
+
+#[derive(Debug, Clone, Default)]
 struct Field {
-    type_of_field: Type,
+    name: Option<String>,
+    type_of_field: Arc<Type>,
     offset: usize,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Default)]
 struct Type {
     size_in_bytes: usize,
     fields: Vec<Field>,
@@ -42,59 +70,60 @@ struct Type {
 
 struct Function {
     name: String,
-    parameters: Vec<(String, Type)>,
-    returns: ConstPoolPtr<Type>,
+    parameters: Vec<(String, Arc<Type>)>,
+    returns: Arc<Type>,
     frame: Frame,
     instructions: Vec<Instruction>,
 }
 
-#[derive(Clone)]
-struct Value {
-    val: Rc<[u8]>,
-    is_of_type: ConstPoolPtr<Type>,
+struct Stack<T> {
+    stack: Vec<T>,
 }
 
-struct Variable {
-    name: String,
-
-}
-
-struct Stack {
-    stack: VecDeque<Byte>,
+impl Stack<Byte> {
+    pub fn pop_into<T: Copy>(&mut self) -> T {
+        let size: usize = std::mem::size_of::<T>();
+        let len = self.stack.len();
+        // SAFETY: We ensure that the stack is long enough and the slice is of the right size.
+        let returnee: T = unsafe {
+            *(self.stack[len-size..len].as_ptr() as *const T)
+        };
+        self.stack.truncate(len-size);
+        returnee
+    }
 }
 
 #[derive(Clone, Copy)]
 enum Instruction {
     Add,
     Sub,
-    Const(),
-}
-
-/// Points to a constant inside the Pool
-#[derive(Clone)]
-struct ConstPoolPtr<T> {
-    index: usize,
-    const_pool: Rc<ConstPool>,
-    _phantom_data: PhantomData<T>,
+    PushPrim(i32),
+    PushType,
+    PushPtr,
+    PushName,
+    Set,
+    Get,
+    Let,
+    Static,
 }
 
 #[derive(Clone)]
 struct Program {
-    types: Vec<Type>,
-    // const_pool: ConstPool,
+    types: Vec<Arc<Type>>,
     instructions: Vec<Instruction>,
     instruction_pointer: usize,
 }
 
 struct Vm {
-    runtime: Runtime,
+    primary_stack: Stack<Byte>,
+    ptr_stack: Stack<BufferPointer>,
+    type_stack: Stack<Type>,
+    name_stack: Stack<String>,
+    global_space: Buffer,
+    constant_space: Buffer,
+    local_space: Buffer,
+    vars: Frame,
     program: Program,
-}
-
-struct ConstPool {
-    types: Vec<Type>,
-    constants: Vec<Value>,
-    string: Vec<String>,
 }
 
 impl Vm {
@@ -106,10 +135,23 @@ impl Vm {
 
         loop {
             _ = match instructions[self.program.instruction_pointer] {
-                Instruction::Add => {},
+                Instruction::Add => {
+                    let rhs: i32 = self.primary_stack.pop_into();
+                    let lhs: i32 = self.primary_stack.pop_into();
+                    let ret: i32 = rhs + lhs;
+                    let test = i32::to_be_bytes(ret);
+                    // self.stack.push()
+                },
                 Instruction::Sub => {},
-                Instruction::Const() => {},
+                Instruction::PushPrim(num) => {},
+                Instruction::Get => {},
+                Instruction::Set => {},
+                Instruction::Let => {todo!()},
+                Instruction::Static => {},
+                _ => { todo!("Implement other operations")}
             };
         }
     }
+    pub async fn exec_one() -> () {todo!()}
+    pub fn get_global_vars() -> HashMap<String, ()> { todo!()}
 }

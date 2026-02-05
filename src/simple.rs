@@ -60,8 +60,4 @@ impl StackMachine {
             self.instruction_pointer += 1;
         }
     }
-
-    #[inline(always)]
-    fn execute_instruction(&mut self, instruction: Instruction) {
-    }
 }
