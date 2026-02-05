@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::sync::LazyLock;
 type Byte = u8;
 
-const FILLER_TYPE: LazyLock<Arc<Type>> = LazyLock::new(|| Arc::new(Type::default()));
+const FILLER_TYPE: LazyLock<Arc<Type>> = LazyLock::new(|| Arc::new(Type::raw(4)));
 
 #[derive(Debug, Default, Clone)]
 pub struct Vm {
@@ -19,7 +19,8 @@ pub struct Vm {
     constant_space: Buffer,
     local_space: Buffer,
     local_scope_stack: Stack<usize>,
-    vars: Frame,
+    // TODO: change to Frame
+    vars: HashMap<(String, VarScope), BufferPointer>,
 }
 
 impl Vm {
@@ -55,8 +56,11 @@ impl Vm {
                 },
                 Instruction::PushName(name) => {
                     self.name_stack.push(name.to_owned())
-                }
-                Instruction::Get => {todo!("Get")},
+                },
+                Instruction::Get => {
+                    let name = self.name_stack.pop();
+                    self.vars.get(&(name, VarScope::Local));
+                },
                 Instruction::Set => {todo!("Set")},
                 Instruction::Jump => {todo!("Jump")},
                 Instruction::If => {todo!("If")},
@@ -70,6 +74,7 @@ impl Vm {
                     let to_push: Box<[u8]>= self.primary_stack.pop_to_slice(4);
                     let name = self.name_stack.pop();
                     let pointer = self.local_space.alloc(&*to_push, 4);
+                    self.vars.insert((name, VarScope::Local), pointer.clone());
                 },
                 Instruction::Static => {
                     let name = self.name_stack.pop();
@@ -148,9 +153,18 @@ enum BufferType {
     Nil,
 }
 
+#[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
+enum VarScope {
+    Local,
+    Global,
+    Constant,
+    #[default]
+    Nil
+}
+
 #[derive(Debug, Clone, Default)]
 struct Frame {
-    vars: HashMap<(String, BufferType), BufferPointer>,
+    vars: HashMap<(String, VarScope), BufferPointer>,
 }
 
 impl Frame {
@@ -163,13 +177,13 @@ impl Frame {
 
 #[derive(Debug, Clone, Default)]
 struct BufferPointer {
-    buf_type: BufferType,
+    buf_type: VarScope,
     index: usize,
     pointee_type: Arc<Type>,
 }
 
 impl BufferPointer {
-    pub fn new(index: usize, of_type: BufferType, pointee_type: Arc<Type>) -> Self {
+    pub fn new(index: usize, of_type: VarScope, pointee_type: Arc<Type>) -> Self {
         Self {
             index,
             buf_type: of_type,
@@ -215,7 +229,7 @@ impl Buffer {
     pub fn alloc(&mut self, mem: &[u8], size: usize) -> BufferPointer {
         match &mut self.buffer_type {
             &mut BufferType::Local { mut used } => {
-                let pointer = BufferPointer::new(used, BufferType::Local { used: 0 }, FILLER_TYPE.clone());
+                let pointer = BufferPointer::new(used, VarScope::Local, FILLER_TYPE.clone());
                 if self.buf.len() <= used + size {
                     self.buf.extend_from_slice(&vec![0; used + size * 2][..])
                 }
@@ -241,10 +255,12 @@ struct Field {
 
 #[derive(Debug, Clone, Default)]
 enum Primitive {
+    Unit,
     Usize,
     Isize,
-    #[default]
     I32,
+    #[default]
+    Raw,
     NewType(Vec<Field>),
 }
 
@@ -252,7 +268,7 @@ enum Primitive {
 struct Type {
     name: String,
     size_in_bytes: usize,
-    fields: Vec<Field>,
+    form: Primitive,
     self_alias: bool,
 }
 
@@ -260,6 +276,15 @@ impl Type {
     pub fn new(name: String, size_in_bytes: usize) -> Self {
         Self {
             name,
+            size_in_bytes,
+            ..Self::default()
+        }
+ 
+    }
+    pub fn raw(size_in_bytes: usize) -> Self {
+        Self {
+            name: "raw".into(),
+            form: Primitive::Raw,
             size_in_bytes,
             ..Self::default()
         }
