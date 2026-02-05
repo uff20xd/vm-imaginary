@@ -1,0 +1,1 @@
+extern vm_imaginary;
