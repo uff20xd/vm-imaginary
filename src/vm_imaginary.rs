@@ -20,10 +20,15 @@ impl Frame {
 struct Buffer {
     buf: Vec<u8>,
     empty: Vec<BufferPointer>,
+    buffer_type: BufferType,
 }
 
 impl Buffer {
+    pub fn new(mem: &[u8]) -> Self { todo!("Implement Initializing buffers with preset memory!")}
+    pub fn alloc(&mut self, mem: &[u8], size: usize) -> BufferPointer {
 
+        todo!("Implement Buffer Allocation!")
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -33,12 +38,22 @@ struct BufferPointer {
     pointee_type: Arc<Type>,
 }
 
+impl BufferPointer {
+    pub fn new(index: usize, of_type: BufferType, pointee_type: Arc<Type>) -> Self {
+        todo!()
+    }
+    pub fn get_size(&self) -> usize {
+        self.pointee_type.size_in_bytes
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 enum BufferType {
     Local,
     Constant,
-    #[default]
     Global,
+    #[default]
+    Nil,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -50,9 +65,20 @@ struct Field {
 
 #[derive(Debug, Clone, Default)]
 struct Type {
+    name: String,
     size_in_bytes: usize,
     fields: Vec<Field>,
     self_alias: bool,
+}
+
+impl Type {
+    pub fn new(name: String, size_in_bytes: usize) -> Self {
+        Self {
+            name,
+            size_in_bytes,
+            ..Self::default()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -105,18 +131,31 @@ impl Stack<String> {
 
 #[derive(Debug, Clone, Default)]
 pub enum Instruction {
+    // s s -> s
     Add,
+    // s s -> s
     Sub,
+    // -> s
     PushPrim(i32),
+    // -> t
     PushType,
+    // -> p
     PushPtr,
+    // -> n
     PushName(String),
+    // p s
     Set,
+    // n -> p
     Get,
+    // s n t -> p
     Let,
+    // s n (t) -> p
     Static,
+    // s
     Jump,
+    // s s -> s
     Eq,
+    // s
     If,
     #[default]
     Nil,
@@ -175,7 +214,9 @@ impl Vm {
                 Instruction::If => {todo!("Jump")},
                 Instruction::Eq => {todo!("Eq")},
                 Instruction::Let => {todo!("Let")},
-                Instruction::Static => {},
+                Instruction::Static => {
+                    let name = self.name_stack.pop();
+                },
                 _ => { todo!("Implement other operations")}
             };
         }
