@@ -52,10 +52,10 @@ impl Vm {
                     self.primary_stack.push_bytes(&ret[..])
                 },
                 Instruction::PushPrim(num) => {
-                    self.primary_stack.push_bytes(&num.to_le_bytes()[..])
+                    self.primary_stack.push_bytes(&num.to_le_bytes()[..]);
                 },
                 Instruction::PushName(name) => {
-                    self.name_stack.push(name.to_owned())
+                    self.name_stack.push(name.to_owned());
                 },
                 Instruction::Get => {
                     let name = self.name_stack.pop();
@@ -78,6 +78,7 @@ impl Vm {
                 },
                 Instruction::Static => {
                     let name = self.name_stack.pop();
+                    todo!()
                 },
                 Instruction::Scope => {
                     let current_used = self.local_space.get_current_used();
@@ -88,7 +89,20 @@ impl Vm {
                     self.local_space.scope_adjust(new_scope);
                 },
                 Instruction::Deref => {
-
+                    let pointer = self.ptr_stack.pop();
+                    let scope = pointer.get_scope();
+                    let mut deref_space: Option<&[u8]> = None;
+                    match scope {
+                        VarScope::Local => {
+                            deref_space = Some(self.local_space.deref(pointer));
+                        },
+                        VarScope::Constant => {todo!("Implement Constant deref")},
+                        VarScope::Global => {todo!("Implement Global deref")},
+                        _ => { unreachable!("We should never had a Nil Scope!") }
+                    }
+                    if let Some(derefed) = deref_space {
+                        self.primary_stack.push_bytes(&derefed)
+                    }
                 },
                 _ => { todo!("Implement other operations")}
             };
@@ -136,6 +150,9 @@ pub enum Instruction {
     End,
     // s
     PrimaryPrint,
+
+    // s -> t
+    Raw,
     #[default]
     Nil,
 }
@@ -153,7 +170,7 @@ enum BufferType {
     Nil,
 }
 
-#[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, Eq, Hash, PartialEq)]
 enum VarScope {
     Local,
     Global,
@@ -177,21 +194,27 @@ impl Frame {
 
 #[derive(Debug, Clone, Default)]
 struct BufferPointer {
-    buf_type: VarScope,
+    scope: VarScope,
     index: usize,
     pointee_type: Arc<Type>,
 }
 
 impl BufferPointer {
-    pub fn new(index: usize, of_type: VarScope, pointee_type: Arc<Type>) -> Self {
+    pub fn new(index: usize, scope: VarScope, pointee_type: Arc<Type>) -> Self {
         Self {
             index,
-            buf_type: of_type,
+            scope,
             pointee_type,
         }
     }
     pub fn get_size(&self) -> usize {
         self.pointee_type.size_in_bytes
+    }
+    pub const fn get_scope(&self) -> VarScope {
+        self.scope
+    }
+    pub const fn get_index(&self) -> usize {
+        self.index
     }
 }
 
@@ -243,6 +266,9 @@ impl Buffer {
             BufferType::Constant => { todo!() },
             _ => { unreachable!("Yeah No!") }
         }
+    }
+    pub fn deref(&self, pointer: BufferPointer) -> &[u8] {
+        &self.buf[pointer.get_index()..pointer.get_index() + pointer.get_size()]
     }
 }
 
@@ -334,7 +360,6 @@ impl Stack<Byte> {
     pub fn pop_to_slice(&mut self, size: usize) -> Box<[u8]> {
         let len = self.stack.len();
         if len < size { panic!("Primarystackunderflow!") }
-        // SAFETY: We ensure that the stack is long enough and the slice is of the right size.
         let returnee = Box::from(&self.stack[len-size..len]);
         self.stack.truncate(len-size);
         returnee
