@@ -59,12 +59,23 @@ impl Vm {
                 },
                 Instruction::Get => {
                     let name = self.name_stack.pop();
-                    self.vars.get(&(name, VarScope::Local));
+                    let pointer_to_var = self.vars.get(&(name, VarScope::Local));
+                    if let Some(pointer) = pointer_to_var {
+                        self.ptr_stack.push(pointer.to_owned());
+                    } else {
+                        self.ptr_stack.push(BufferPointer::null());
+                    }
                 },
                 Instruction::Set => {todo!("Set")},
                 Instruction::Jump => {todo!("Jump")},
-                Instruction::If => {todo!("If")},
-                Instruction::Eq => {todo!("Eq")},
+                Instruction::If => {
+                    instruction_pointer += (self.primary_stack.pop() == 0) as usize * 2;
+                },
+                Instruction::Eq => {
+                    let name = self.name_stack.pop();
+                    let pointer_to_var = self.vars.get(&(name, VarScope::Local));
+                    todo!("Continue Eq implementation.")
+                },
                 Instruction::PrimaryPrint => {
                     let to_debug: i32 = self.primary_stack.pop_into();
                     dbg!(to_debug);
@@ -98,20 +109,22 @@ impl Vm {
                         },
                         VarScope::Constant => {todo!("Implement Constant deref")},
                         VarScope::Global => {todo!("Implement Global deref")},
-                        _ => { unreachable!("We should never had a Nil Scope!") }
+                        VarScope::NullPointer => { panic!("You cant dereference a null pointer!") }
+                        _ => { unreachable!("We should never had a Nil Scope!") },
                     }
                     if let Some(derefed) = deref_space {
-                        self.primary_stack.push_bytes(&derefed)
+                        self.primary_stack.push_bytes(derefed)
                     }
                 },
+                Instruction::Raw => { todo!("Implement Raw Keyword!")}
                 _ => { todo!("Implement other operations")}
             };
             instruction_pointer += 1;
             if instruction_pointer >= instructions.len() { break; }
         }
     }
-    pub async fn exec_one() -> () {todo!()}
-    pub fn get_global_vars() -> HashMap<String, ()> { todo!()}
+    pub async fn exec_one() -> () { todo!() }
+    pub fn get_global_vars() -> HashMap<String, ()> { todo!() }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -175,6 +188,7 @@ enum VarScope {
     Local,
     Global,
     Constant,
+    NullPointer,
     #[default]
     Nil
 }
@@ -205,6 +219,13 @@ impl BufferPointer {
             index,
             scope,
             pointee_type,
+        }
+    }
+    pub fn null() -> Self {
+        Self {
+            index: 0,
+            scope: VarScope::NullPointer,
+            pointee_type: Arc::new(Type::null()),
         }
     }
     pub fn get_size(&self) -> usize {
@@ -282,6 +303,7 @@ struct Field {
 #[derive(Debug, Clone, Default)]
 enum Primitive {
     Unit,
+    Null,
     Usize,
     Isize,
     I32,
@@ -313,6 +335,14 @@ impl Type {
             form: Primitive::Raw,
             size_in_bytes,
             ..Self::default()
+        }
+    }
+    pub fn null() -> Self {
+        Self {
+            name: "null".into(),
+            form: Primitive::Null,
+            size_in_bytes: 0,
+            self_alias: false,
         }
     }
 }
