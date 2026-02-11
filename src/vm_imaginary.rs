@@ -28,7 +28,7 @@ impl Vm {
     pub fn new() -> Self {
         Self {
             local_space: Buffer::new(BufferType::Local { used: 0 }),
-            types: vec![]
+            standard_stack_push: (Primitive::I32, 4),
             ..Self::default()
         }
     }

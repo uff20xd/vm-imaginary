@@ -16,7 +16,8 @@ fn main() {
         .add_step(&["rustc", "src/lib.rs", "--crate-type=rlib", "-o", "$out"])
         .with_flags(RUST_FLAGS)
         .with_flags(LIB_FLAGS)
-        .compile();
+        .compile()
+        .run();
 
     let vm_test1 = Mcule::new("vm-imaginary-test1", "./out/tests")
         .with(&["tests/machine_test.rs".into(), "src/lib.rs".into(), "src/vm_imaginary.rs".into()])
