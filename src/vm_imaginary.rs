@@ -7,6 +7,7 @@ const FILLER_TYPE: LazyLock<Arc<Type>> = LazyLock::new(|| Arc::new(Type::raw(4))
 
 #[derive(Debug, Default, Clone)]
 pub struct Vm {
+    standard_stack_push: (Primitive, usize),
     types: Vec<Arc<Type>>,
     _instructions: Vec<Instruction>,
     _instruction_pointer: usize,
@@ -27,6 +28,7 @@ impl Vm {
     pub fn new() -> Self {
         Self {
             local_space: Buffer::new(BufferType::Local { used: 0 }),
+            types: vec![]
             ..Self::default()
         }
     }
