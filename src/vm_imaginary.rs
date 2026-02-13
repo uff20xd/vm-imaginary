@@ -37,7 +37,6 @@ impl Vm {
         let mut instruction_pointer = 0;
 
         loop {
-            println!("Here");
             _ = match &instructions[instruction_pointer] {
                 Instruction::Add => {
                     let rhs: i32 = self.primary_stack.pop_into();
