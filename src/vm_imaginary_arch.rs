@@ -21,6 +21,12 @@ enum Primitives {
 
 #[derive(Debug, Clone, Default)]
 enum Instruction {
+    Add,
+    Sub,
+    Div,
+    Mul,
+    Mod,
+
     Bottom,
     Push(u32),
     Raw,
