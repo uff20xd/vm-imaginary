@@ -24,7 +24,7 @@ enum Primitive {
 }
 
 #[derive(Debug, Clone, Default)]
-enum Instruction {
+pub enum Instruction {
     #[default]
     Null,
     Bottom,
@@ -58,6 +58,8 @@ enum BufPointer {
     Const(usize),
     Mut(usize),
     String(usize),
+    #[default]
+    Invalid,
 }
 
 struct Function {
@@ -72,7 +74,7 @@ struct Runtime {
     labels: HashMap<Name, usize>,
 }
 
-struct VM {
+pub struct VM {
     stack_bottom: Primitive,
     runtime: Runtime,
     name_stack: Stack<Name>,
@@ -106,4 +108,8 @@ impl Buffer {
     fn deref(pointer: BufPointer, size: usize, off_set: usize) -> Box<[u8]> { todo!() }
     fn add_scope() { todo!() }
     fn pop_scope() { todo!() }
+}
+
+impl VM {
+    pub fn new() -> Self {todo!()}
 }
