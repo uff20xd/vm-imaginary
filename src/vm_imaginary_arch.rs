@@ -9,8 +9,9 @@ struct CustomType {
 
 #[derive(Debug, Clone, Default)]
 enum Primitives {
-    Null
+    Null,
     Unit,
+    String,
     Usize,
     Raw(u32),
     I64,
@@ -26,6 +27,10 @@ enum Instruction {
     Let,
     Get,
     Deref,
+    Eq,
+    If,
+    Label,
+    Jump,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -46,11 +51,29 @@ struct Buffer {
 enum BufPointer {
     Const(usize),
     Mut(usize),
+    String(usize),
+}
+
+struct Function {
+    ret: Primitive,
+    parameters: Vec<(Name, Primitive)>,
 }
 
 struct Runtime {
     types: Vec<Arc<CustomType>>,
-    vars: HashTable<Name, (BufPointer, Primitives>,
+    vars: HashMap<Name, (BufPointer, Primitives>,
+    functions: HastMap<Name, Function>,
+    labels: HashMap<Name, usize>,
+}
+
+struct VM {
+    stack_bottom: Primitive,
+    runtime: Runtime,
+    name_stack: Stack<Name>,
+    type_stack: Stack<Type>,
+    primitive_stack: Stack<Byte>,
+    buf: Buffer,
+    string_space: Vec<Name>,
 }
 
 impl<T> Stack<T> {
@@ -63,12 +86,18 @@ impl<T> Stack<T> {
 }
 
 impl Stack<Byte> {
-    fn push_bytes(bytes: &[Byte]) -> () { todo!() }
+    fn push_bytes(&mut self , bytes: &[Byte]) -> () {
+        let len = bytes.len();
+        self.stack.extend(bytes)
+
+    }
     fn pop_bytes(size: usize) -> Box<[Byte]> { todo!() }
 }
 
 impl Buffer {
-    fn alloc(bytes: &[Byte]) -> () { todo!() }
+    fn alloc(bytes: &[Byte], size: usize) -> () { todo!() }
     fn write(size: usize) -> Box<[Byte]> { todo!() }
     fn deref(pointer: BufPointer, size: usize, off_set: usize) -> Box<[u8]> { todo!() }
+    fn add_scope() { todo!() }
+    fn pop_scope() { todo!() }
 }
