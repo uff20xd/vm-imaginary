@@ -6,5 +6,5 @@ edition = "2024"
 [dependencies]
 
 [profile.dev]
-opt-level=1
+opt-level="z"
 

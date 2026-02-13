@@ -4,7 +4,7 @@ use std::collections::HashMap;
 type Name = String;
 type Byte = u8;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 struct CustomType {
     fields: Vec<CustomType>,
     size: usize,
@@ -23,9 +23,8 @@ enum Primitive {
     CustomType(Arc<CustomType>),
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub enum Instruction {
-    #[default]
     Null,
     Bottom,
     Push(u32),
@@ -53,20 +52,21 @@ struct Buffer {
     scope: Vec<usize>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 enum BufPointer {
     Const(usize),
     Mut(usize),
     String(usize),
-    #[default]
     Invalid,
 }
 
+#[derive(Debug, Clone)]
 struct Function {
     ret: Primitive,
     parameters: Vec<(Name, Primitive)>,
 }
 
+#[derive(Debug, Clone, Default)]
 struct Runtime {
     types: Vec<Arc<CustomType>>,
     vars: HashMap<Name, (BufPointer, Primitive)>,
@@ -74,6 +74,7 @@ struct Runtime {
     labels: HashMap<Name, usize>,
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct VM {
     stack_bottom: Primitive,
     runtime: Runtime,
@@ -95,11 +96,26 @@ impl<T> Stack<T> {
 
 impl Stack<Byte> {
     fn push_bytes(&mut self , bytes: &[Byte]) -> () {
-        let len = bytes.len();
-        self.stack.extend(bytes)
-
+        self.stack.extend_from_slice(bytes)
     }
-    fn pop_bytes(size: usize) -> Box<[Byte]> { todo!() }
+    fn pop_bytes(&mut self, size: usize) -> Box<[Byte]> {
+        let len = self.stack.len();
+        if len < size { panic!("Primary Stack: Stackunderflow!") }
+        let returnee = Box::from(&self.stack[len-size..len]);
+        self.stack.truncate(len-size);
+        returnee
+    }
+    pub fn pop_into<T: Copy>(&mut self) -> T {
+        let size: usize = std::mem::size_of::<T>();
+        let len = self.stack.len();
+        if len < size { panic!("Primarystackunderflow!") }
+        // SAFETY: We ensure that the stack is long enough and the slice is of the right size.
+        let returnee: T = unsafe {
+            *(self.stack[len-size..len].as_ptr() as *const T)
+        };
+        self.stack.truncate(len-size);
+        returnee
+    }
 }
 
 impl Buffer {

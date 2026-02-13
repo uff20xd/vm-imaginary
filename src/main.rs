@@ -1,4 +1,5 @@
 mod vm_imaginary;
+mod tests;
 // mod simple;
 // use simple::StackMachine;
 use vm_imaginary::{VM, Instruction::*};
