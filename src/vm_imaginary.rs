@@ -1,3 +1,6 @@
+use std::sync::Arc;
+use std::collections::HashMap;
+
 type Name = String;
 type Byte = u8;
 
@@ -8,7 +11,8 @@ struct CustomType {
 }
 
 #[derive(Debug, Clone, Default)]
-enum Primitives {
+enum Primitive {
+    #[default]
     Null,
     Unit,
     String,
@@ -21,6 +25,8 @@ enum Primitives {
 
 #[derive(Debug, Clone, Default)]
 enum Instruction {
+    #[default]
+    Null,
     Bottom,
     Push(u32),
     Raw,
@@ -44,7 +50,7 @@ struct Buffer {
     const_space: usize,
     const_counter: usize,
     buf_counter: usize,
-    scope: vec<scope>,
+    scope: Vec<usize>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -61,8 +67,8 @@ struct Function {
 
 struct Runtime {
     types: Vec<Arc<CustomType>>,
-    vars: HashMap<Name, (BufPointer, Primitives>,
-    functions: HastMap<Name, Function>,
+    vars: HashMap<Name, (BufPointer, Primitive)>,
+    functions: HashMap<Name, Function>,
     labels: HashMap<Name, usize>,
 }
 
@@ -70,7 +76,7 @@ struct VM {
     stack_bottom: Primitive,
     runtime: Runtime,
     name_stack: Stack<Name>,
-    type_stack: Stack<Type>,
+    type_stack: Stack<Primitive>,
     primitive_stack: Stack<Byte>,
     buf: Buffer,
     string_space: Vec<Name>,
@@ -80,7 +86,7 @@ impl<T> Stack<T> {
     fn push(&mut self, val: T) -> () {
         self.stack.push(val);
     }
-    fn pop(&mut self) -> T {
+    fn pop(&mut self) -> Option<T> {
         self.stack.pop()
     }
 }
