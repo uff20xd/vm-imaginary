@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use crate::error::VMImagineError;
 
 type Name = String;
 type Byte = u8;
@@ -27,7 +28,7 @@ enum Primitive {
 pub enum Instruction {
     Null,
     Bottom,
-    Push(u32),
+    Push(i128),
     Raw,
     Let,
     Get,
@@ -127,5 +128,22 @@ impl Buffer {
 }
 
 impl VM {
-    pub fn new() -> Self {todo!()}
+    pub fn new() -> Self { 
+        Self {
+            stack_bottom: Primitive::I64,
+            ..Default::default()
+        }
+    }
+    pub fn exec(&mut self, instructions: Vec<Instruction>) -> Result<(), VMImagineError> { 
+        while let Some(instruction) = instructions.iter().next() {
+            match instruction {
+                Instruction::Push(num) => {
+                    // TODO: allow this for more numbers I guess
+                    self.primitive_stack.push_bytes(&(*num as i64).to_ne_bytes())
+                },
+                _ => { return Err(VMImagineError::UnimplementedInstructionUsed); },
+            }
+        }
+        Ok(())
+    }
 }
